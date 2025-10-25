@@ -1,81 +1,65 @@
 body {
   margin: 0;
   font-family: 'Segoe UI', sans-serif;
-  background-color: #f5f6f8;
+  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+  color: #fff;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .login-container {
   display: flex;
-  height: 100vh;
+  width: 90%;
+  max-width: 1000px;
+  height: 80vh;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.3);
 }
 
-/* LADO IZQUIERDO */
+/* Lado izquierdo con logo */
 .left-side {
   flex: 1;
-  background-color: #ffffff;
-  padding: 50px;
+  background: radial-gradient(circle at center, #3498db, #0f2027);
   display: flex;
-  flex-direction: column;
   justify-content: center;
-  text-align: left;
-  border-right: 1px solid #e2e2e2;
+  align-items: center;
 }
 
-.logo {
-  width: 90px;
-  margin-bottom: 15px;
+.logo-large {
+  width: 60%;
+  max-width: 250px;
 }
 
-.left-side h2 {
-  font-size: 24px;
-  margin-bottom: 10px;
-  color: #333;
-}
-
-.left-side p {
-  color: #555;
-  max-width: 400px;
-  line-height: 1.5;
-}
-
-.help-box {
-  background-color: #f8f9fa;
-  border: 1px solid #e0e0e0;
-  border-radius: 10px;
-  padding: 15px;
-  margin-top: 40px;
-}
-
-.help-box h4 {
-  margin: 0 0 5px 0;
-  color: #333;
-}
-
-/* LADO DERECHO */
+/* Lado derecho: formulario */
 .right-side {
   flex: 1;
+  background-color: #10141a;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
 .login-box {
-  background-color: white;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
   padding: 40px;
-  border-radius: 12px;
-  box-shadow: 0 2px 15px rgba(0,0,0,0.1);
-  width: 330px;
+  width: 320px;
   text-align: center;
+  box-shadow: 0 0 15px rgba(0,0,0,0.2);
 }
 
 .login-box h2 {
-  margin-bottom: 5px;
-  color: #222;
+  margin-bottom: 8px;
+  color: #fff;
 }
 
 .subtitle {
-  color: #666;
-  font-size: 14px;
+  color: #ccc;
+  font-size: 13px;
   margin-bottom: 25px;
 }
 
@@ -84,7 +68,7 @@ label {
   text-align: left;
   margin-bottom: 5px;
   font-weight: 500;
-  color: #333;
+  color: #ddd;
 }
 
 input {
@@ -92,18 +76,23 @@ input {
   padding: 10px;
   margin-bottom: 15px;
   border-radius: 8px;
-  border: 1px solid #ccc;
+  border: none;
   font-size: 14px;
+  background-color: #1e2732;
+  color: #fff;
+}
+
+input::placeholder {
+  color: #aaa;
 }
 
 input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 3px #3b82f6;
+  outline: 2px solid #3b82f6;
+  background-color: #24303f;
 }
 
 .error {
-  color: red;
+  color: #f87171;
   font-size: 13px;
   margin-bottom: 10px;
 }
@@ -123,7 +112,7 @@ input:focus {
 
 button {
   width: 100%;
-  background-color: #3b82f6;
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
   color: white;
   border: none;
   border-radius: 8px;
@@ -131,15 +120,17 @@ button {
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
+  transition: 0.3s;
 }
 
 button:hover {
-  background-color: #2563eb;
+  background: linear-gradient(90deg, #2563eb, #3b82f6);
+  transform: scale(1.03);
 }
 
 .footer {
   font-size: 11px;
-  color: #777;
+  color: #aaa;
   margin-top: 25px;
   line-height: 1.4;
 }

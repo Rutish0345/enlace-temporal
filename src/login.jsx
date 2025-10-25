@@ -17,27 +17,17 @@ function App() {
   }
 
   return (
-    <div className="login-container">
-      {/* Lado izquierdo */}
+     <div className="login-container">
+      {/* Lado izquierdo con logo grande */}
       <div className="left-side">
         <img
           src="https://cdn-icons-png.flaticon.com/512/906/906343.png"
           alt="logo"
-          className="logo"
+          className="logo-large"
         />
-        <h2>Sistema de cotización</h2>
-        <p>
-          Plataforma interna para la gestión y control de datos.  
-          Acceso restringido al personal autorizado de la empresa.
-        </p>
-
-        <div className="help-box">
-          <h4>¿Necesitas ayuda?</h4>
-          <p>Contacta al departamento de TI para asistencia con tu cuenta.</p>
-        </div>
       </div>
 
-      {/* Lado derecho */}
+      {/* Lado derecho: formulario */}
       <div className="right-side">
         <div className="login-box">
           <h2>Iniciar sesión</h2>
@@ -72,13 +62,14 @@ function App() {
           </form>
 
           <p className="footer">
-            soporte@empresa.com · +52 77 **** ****  
+            soporte@empresa.com · +52 77 11 89 12 65
             <br />© 2025 Empresa — Todos los derechos reservados
           </p>
         </div>
       </div>
     </div>
   )
+  
 }
 
 export default App
