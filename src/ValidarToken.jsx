@@ -1,7 +1,7 @@
 // src/ValidarToken.jsx
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import './App.css'; // Usa los estilos existentes
+import './App.css';
 
 function ValidarToken() {
   const [mensaje, setMensaje] = useState('');
@@ -30,8 +30,7 @@ function ValidarToken() {
         }
 
         setMensaje('¡Acceso confirmado! Sesión iniciada.');
-        // Aquí podrías redirigir al usuario a una página de dashboard o inicio
-        // Ejemplo: window.location.href = '/dashboard';
+        // Aquí es redirigir al usuario a una página de inicio Ejemplo: window.location.href = '/dashboard';
       } catch (err) {
         setError(err.message);
       }

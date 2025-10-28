@@ -2,9 +2,7 @@
 
 import { useState } from 'react'
 import './App.css'
-import { Link } from 'react-router-dom' // <-- 1. IMPORTAMOS LINK
-
-// 2. Renombramos App -> Login para que coincida con el nombre del archivo
+import { Link } from 'react-router-dom' 
 function Login() { 
   const [user, setUser] = useState('')
   const [password, setPassword] = useState('')
@@ -15,7 +13,7 @@ function Login() {
     // Esta es la lógica de Benilde (PIN) o una temporal
     if (user === 'admin' && password === '12345') {
       setError('')
-      alert('Inicio de sesión exitoso ✅')
+      alert('Inicio de sesión exitoso')
     } else {
       setError('Contraseña incorrecta')
     }
@@ -23,7 +21,7 @@ function Login() {
 
   return (
     <div className="login-container">
-      {/* Lado izquierdo con logo grande */}
+      {}
       <div className="left-side">
         <img
           src="https://cdn-icons-png.flaticon.com/512/906/906343.png"
@@ -65,11 +63,11 @@ function Login() {
 
             <button type="submit">Iniciar sesión</button>
             
-            {/* --- 3. TU MODIFICACIÓN --- */}
+            {}
             <Link to="/solicitar-enlace" className="forgot" style={{textAlign: 'center', display: 'block', marginTop: '15px'}}>
               O acceder con enlace temporal
             </Link>
-            {/* --- FIN DE TU MODIFICACIÓN --- */}
+            {}
             
           </form>
 

@@ -6,23 +6,22 @@ const jwt = require('jsonwebtoken');
 const connectDB = require('./db');
 const cors = require('cors');
 
-// Importar los modelos
+
 const Usuario = require('./models/Usuario');
 const EnlaceTemporal = require('./models/EnlaceTemporal');
 
 const app = express();
 
-// --- CONFIGURAMOS CORS ---
+
 app.use(cors({
   origin: 'http://localhost:5173'
 }));
 
 app.use(express.json()); 
 
-// Conectar a la Base de Datos
+
 connectDB();
 
-// Endpoint temporal para insertar usuario de prueba (puedes eliminarlo después)
 app.post('/api/test/insert-user', async (req, res) => {
   try {
     const { nombre, correo } = req.body;
@@ -46,20 +45,20 @@ app.post('/api/test/insert-user', async (req, res) => {
 app.post('/api/auth/generar-enlace', async (req, res) => {
   try {
     const { email } = req.body;
-    console.log(`📧 [1] Email recibido: ${email}`);
+    console.log(`[1] Email recibido: ${email}`);
 
     const usuario = await Usuario.findOne({ correo: email });
-    console.log(`🔍 [2] Usuario encontrado: ${usuario ? 'SÍ' : 'NO'}`);
+    console.log(`[2] Usuario encontrado: ${usuario ? 'SÍ' : 'NO'}`);
 
     if (usuario) {
-      console.log(`🆔 [3] Generando token para usuario: ${usuario.correo}`);
+      console.log(`[3] Generando token para usuario: ${usuario.correo}`);
       const token = crypto.randomBytes(32).toString('hex');
 
       await new EnlaceTemporal({
         usuarioId: usuario._id,
         token
       }).save();
-      console.log(`✅ [4] Token guardado: ${token}`);
+      console.log(`[4] Token guardado: ${token}`);
 
       const transporter = nodemailer.createTransport({
         service: 'gmail',
@@ -72,9 +71,9 @@ app.post('/api/auth/generar-enlace', async (req, res) => {
       // Verificación de Nodemailer (temporal para pruebas)
       transporter.verify((error, success) => {
         if (error) {
-          console.error('❌ Error en Nodemailer:', error);
+          console.error('Error en Nodemailer:', error);
         } else {
-          console.log('✅ Nodemailer configurado correctamente');
+          console.log('Nodemailer configurado correctamente');
         }
       });
 
@@ -92,12 +91,12 @@ app.post('/api/auth/generar-enlace', async (req, res) => {
           <p>Si no solicitaste esto, ignora este correo.</p>
         `
       });
-      console.log(`📤 [5] Correo enviado a: ${usuario.correo}`);
+      console.log(`[5] Correo enviado a: ${usuario.correo}`);
     }
 
     res.json({ message: 'Si tu correo está registrado, recibirás un enlace.' });
   } catch (error) {
-    console.error('💥 [ERROR] en /generar-enlace:', error);
+    console.error('[ERROR] en /generar-enlace:', error);
     res.status(500).json({ message: 'Error en el servidor' });
   }
 });
@@ -129,5 +128,5 @@ app.post('/api/auth/validar-enlace', async (req, res) => {
 
 const PORT = 3001;
 app.listen(PORT, () => {
-  console.log(`Servidor Backend corriendo en http://localhost:${PORT} 🚀`);
+  console.log(`Servidor Backend corriendo en http://localhost:${PORT}`);
 });

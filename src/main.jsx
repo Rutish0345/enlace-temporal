@@ -5,7 +5,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 import Login from './login.jsx';
 import SolicitarEnlace from './SolicitarEnlace.jsx';
-import ValidarToken from './ValidarToken.jsx'; // Nuevo import
+import ValidarToken from './ValidarToken.jsx';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -13,7 +13,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/solicitar-enlace" element={<SolicitarEnlace />} />
-        <Route path="/validar-acceso" element={<ValidarToken />} /> {/* Nueva ruta */}
+        <Route path="/validar-acceso" element={<ValidarToken />} /> {/*ruta*/}
       </Routes>
     </BrowserRouter>
   </React.StrictMode>

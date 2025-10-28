@@ -15,10 +15,10 @@ const enlaceTemporalSchema = new mongoose.Schema({
   expiraEn: { 
     type: Date, 
     default: () => Date.now() + 15 * 60 * 1000, 
-    expires: 900 // MongoDB borrará esto automáticamente después de 15 min
+    expires: 900 
   }
 }, { 
-  collection: 'enlaces_temporales' // ¡Línea CRÍTICA!
+  collection: 'enlaces_temporales' 
 });
 
 module.exports = mongoose.model('EnlaceTemporal', enlaceTemporalSchema);
