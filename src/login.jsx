@@ -1,13 +1,18 @@
+// src/login.jsx
+
 import { useState } from 'react'
 import './App.css'
+import { Link } from 'react-router-dom' // <-- 1. IMPORTAMOS LINK
 
-function App() {
+// 2. Renombramos App -> Login para que coincida con el nombre del archivo
+function Login() { 
   const [user, setUser] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
 
   const handleLogin = (e) => {
     e.preventDefault()
+    // Esta es la lógica de Benilde (PIN) o una temporal
     if (user === 'admin' && password === '12345') {
       setError('')
       alert('Inicio de sesión exitoso ✅')
@@ -17,7 +22,7 @@ function App() {
   }
 
   return (
-     <div className="login-container">
+    <div className="login-container">
       {/* Lado izquierdo con logo grande */}
       <div className="left-side">
         <img
@@ -59,6 +64,13 @@ function App() {
             </a>
 
             <button type="submit">Iniciar sesión</button>
+            
+            {/* --- 3. TU MODIFICACIÓN --- */}
+            <Link to="/solicitar-enlace" className="forgot" style={{textAlign: 'center', display: 'block', marginTop: '15px'}}>
+              O acceder con enlace temporal
+            </Link>
+            {/* --- FIN DE TU MODIFICACIÓN --- */}
+            
           </form>
 
           <p className="footer">
@@ -72,4 +84,4 @@ function App() {
   
 }
 
-export default App
+export default Login // <-- 2. (Continuación) Exportamos Login
