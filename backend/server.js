@@ -60,13 +60,13 @@ app.post('/api/auth/generar-enlace', async (req, res) => {
       }).save();
       console.log(`[4] Token guardado: ${token}`);
 
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: '20230047@uthh.edu.mx',
-          pass: 'aiktrzizknlzdehz' // <- Reemplaza con tu App Password
-        }
-      });
+     const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
 
       // Verificación de Nodemailer (temporal para pruebas)
       transporter.verify((error, success) => {
@@ -76,8 +76,7 @@ app.post('/api/auth/generar-enlace', async (req, res) => {
           console.log('Nodemailer configurado correctamente');
         }
       });
-
-      const enlace = `http://localhost:5173/validar-acceso?token=${token}`;
+const enlace = `https://tu-frontend.vercel.app/validar-acceso?token=${token}`;
       await transporter.sendMail({
         from: '"Soporte Seguridad" <20230047@uthh.edu.mx>',
         to: usuario.correo,
