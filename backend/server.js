@@ -1,123 +1,93 @@
-// backend/server.js
-require('dotenv').config(); // ← AÑADE ESTO AL INICIO
+// backend/server.js  ← versión INFALIBLE (sin depender del .env)
+
 const express = require('express');
+const cors = require('cors');
+const mongoose = require('mongoose');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const jwt = require('jsonwebtoken');
-const connectDB = require('./db');
-const cors = require('cors');
 
 const Usuario = require('./models/Usuario');
 const EnlaceTemporal = require('./models/EnlaceTemporal');
 
 const app = express();
-
-const allowedOrigins = [
-  'http://localhost:5173',
-  process.env.FRONTEND_URL || 'https://vercel.com/ruths-projects-d5ab6f69/enlace-temporal'
-];
-
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('No permitido por CORS'));
-    }
-  }
-}));
-
+app.use(cors());
 app.use(express.json());
 
-connectDB();
+// ======= TODAS LAS VARIABLES FIJAS AQUÍ (funciona SÍ o SÍ) =======
+const MONGO_URI = "mongodb+srv://uniactividades75_db_user:ZfI4XJjRHngtIhcB@practica.dz6w7ti.mongodb.net/seguridad?retryWrites=true&w=majority";
+const EMAIL_USER = "20230047@uthh.edu.mx";
+const EMAIL_PASS = "aiktrzizknlzdehz";
+const FRONTEND_URL = "http://localhost:5173";
 
-// Ruta de prueba
-app.post('/api/test/insert-user', async (req, res) => {
-  try {
-    const { nombre, correo } = req.body;
-    const usuario = new Usuario({
-      id_usuario: crypto.randomBytes(8).toString('hex'),
-      nombre,
-      correo,
-      pin_seguridad: '12345',
-      fecha_creacion: new Date(),
-      estado_cuenta: 'activo'
-    });
-    await usuario.save();
-    res.json({ message: 'Usuario insertado', correo });
-  } catch (error) {
-    res.status(500).json({ message: 'Error al insertar usuario' });
-  }
-});
+// Conexión directa a MongoDB (sin process.env)
+mongoose.connect(MONGO_URI)
+  .then(() => console.log('MongoDB conectado correctamente'))
+  .catch(err => {
+    console.error('Error conectando a MongoDB:', err.message);
+    process.exit(1);
+  });
 
-// Generar enlace
+// GENERAR ENLACE
 app.post('/api/auth/generar-enlace', async (req, res) => {
   try {
     const { email } = req.body;
-    console.log(`[1] Email recibido: ${email}`);
-
-    const usuario = await Usuario.findOne({ correo: email });
-    console.log(`[2] Usuario encontrado: ${usuario ? 'SÍ' : 'NO'}`);
+    const usuario = await Usuario.findOne({ correo: email?.trim() });
 
     if (usuario) {
+      await EnlaceTemporal.deleteMany({ usuarioId: usuario._id });
       const token = crypto.randomBytes(32).toString('hex');
-      await new EnlaceTemporal({ usuarioId: usuario._id, token }).save();
-      console.log(`[4] Token guardado: ${token}`);
+      await EnlaceTemporal.create({ usuarioId: usuario._id, token });
+
+      const enlace = `${FRONTEND_URL}/validar-acceso?token=${token}`;
 
       const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS
-        }
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false,
+        auth: { user: EMAIL_USER, pass: EMAIL_PASS }
       });
 
-      const enlace = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/validar-acceso?token=${token}`;
       await transporter.sendMail({
-        from: '"Soporte Seguridad" <20230047@uthh.edu.mx>',
+        from: EMAIL_USER,
         to: usuario.correo,
-        subject: 'Tu enlace de acceso temporal',
-        html: `
-          <p>Hola ${usuario.nombre},</p>
-          <p>Haz clic para iniciar sesión. Expira en 15 minutos.</p>
-          <a href="${enlace}" style="padding: 10px 15px; background: #007bff; color: white; text-decoration: none; border-radius: 5px;">
-            Acceder a mi cuenta
-          </a>
-        `
+        subject: 'Tu enlace mágico - UTHH',
+        html: `<h2>Hola ${usuario.nombre}</h2>
+               <p>Da clic para entrar (expira en 15 min):</p>
+               <a href="${enlace}" style="background:#007bff;color:white;padding:15px 30px;text-decoration:none;border-radius:10px;font-size:18px;">Entrar ahora</a>`
       });
-      console.log(`[5] Correo enviado a: ${usuario.correo}`);
+
+      console.log('Correo enviado a:', usuario.correo);
     }
 
-    res.json({ message: 'Si tu correo está registrado, recibirás un enlace.' });
-  } catch (error) {
-    console.error('[ERROR]', error);
-    res.status(500).json({ message: 'Error en el servidor' });
+    res.json({ message: 'Si el correo está registrado, recibirás un enlace.' });
+
+  } catch (err) {
+    console.error('Error:', err.message);
+    res.status(500).json({ message: 'Error' });
   }
 });
 
-// Validar enlace
+// VALIDAR ENLACE
 app.post('/api/auth/validar-enlace', async (req, res) => {
   try {
     const { token } = req.body;
-    const enlace = await EnlaceTemporal.findOne({ token });
+    const enlace = await EnlaceTemporal.findOne({ token }).populate('usuarioId');
 
-    if (!enlace) return res.status(400).json({ message: 'Enlace inválido o expirado.' });
+    if (!enlace || (enlace.expiraEn && enlace.expiraEn < new Date())) {
+      return res.status(400).json({ message: 'Enlace inválido o expirado' });
+    }
 
     await EnlaceTemporal.deleteOne({ _id: enlace._id });
+    const sessionToken = jwt.sign({ id: enlace.usuarioId._id }, 'clave123', { expiresIn: '7d' });
 
-    const sessionToken = jwt.sign(
-      { usuarioId: enlace.usuarioId },
-      'CLAVE_SECRETA_PARA_JWT',
-      { expiresIn: '1h' }
-    );
+    res.json({ sessionToken, message: '¡Acceso concedido!' });
 
-    res.json({ sessionToken });
-  } catch (error) {
-    res.status(500).json({ message: 'Error en el servidor' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error' });
   }
 });
 
-const PORT = 3001;
-app.listen(PORT, () => {
-  console.log(`Servidor Backend corriendo en http://localhost:${PORT}`);
+app.listen(3001, () => {
+  console.log('Backend corriendo en http://localhost:3001');
 });
