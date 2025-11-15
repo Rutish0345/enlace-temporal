@@ -6,12 +6,12 @@ import Registro from './Registro.jsx';
 import RecuperarPassword from './RecuperarPassword.jsx';
 import CambiarPassword from './CambiarPassword.jsx';
 import Dashboard from './Dashboard.jsx';
-import Login from './Login.jsx';
+import Login from './Login.jsx';        
 import SolicitarEnlace from './SolicitarEnlace.jsx';
 import ValidarToken from './ValidarToken.jsx';
 
-import './index.css';        // ← este sí lo necesitas
-import './App.css';          // ← este también (tus estilos bonitos)
+import './index.css';
+import './App.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
