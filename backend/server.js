@@ -1,162 +1,172 @@
-// backend/server.js  ← versión INFALIBLE (sin depender del .env)
-// === SOLO PARA VERCEL (serverless) ===
+// backend/server.js
+// === SERVERLESS PARA VERCEL + PRODUCCIÓN ===
 
+require('dotenv').config();
 
-const bcryptjs = require('bcryptjs');
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const jwt = require('jsonwebtoken');
+const bcryptjs = require('bcryptjs');
 
 const Usuario = require('./models/Usuario');
 const EnlaceTemporal = require('./models/EnlaceTemporal');
 
 const app = express();
-app.use(cors());
+
+// === CONFIGURACIÓN DE ENTORNO ===
+const MONGO_URI = process.env.MONGO_URI;
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_PASS = process.env.EMAIL_PASS;
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_1234567890';
+
+// Validar variables críticas
+if (!MONGO_URI || !EMAIL_USER || !EMAIL_PASS) {
+  console.error('Faltan variables de entorno: MONGO_URI, EMAIL_USER, EMAIL_PASS');
+  process.exit(1);
+}
+
+// === MIDDLEWARE ===
+app.use(cors({
+  origin: FRONTEND_URL,
+  credentials: true
+}));
 app.use(express.json());
 
-// ======= TODAS LAS VARIABLES FIJAS AQUÍ (funciona SÍ o SÍ) =======
-const MONGO_URI = "mongodb+srv://uniactividades75_db_user:ZfI4XJjRHngtIhcB@practica.dz6w7ti.mongodb.net/seguridad?retryWrites=true&w=majority";
-const EMAIL_USER = "20230047@uthh.edu.mx";
-const EMAIL_PASS = "aiktrzizknlzdehz";
-const FRONTEND_URL = "http://localhost:5173";
-
-// Conexión directa a MongoDB (sin process.env)
+// === CONEXIÓN A MONGODB ===
 mongoose.connect(MONGO_URI)
-  .then(() => console.log('MongoDB conectado correctamente'))
+  .then(() => console.log('MongoDB conectado'))
   .catch(err => {
-    console.error('Error conectando a MongoDB:', err.message);
+    console.error('Error MongoDB:', err.message);
     process.exit(1);
   });
 
-// === GENERAR ENLACE MÁGICO (MISMO DISEÑO QUE RECUPERACIÓN) ===
+// === TRANSPORTER DE EMAIL ===
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: EMAIL_USER,
+    pass: EMAIL_PASS
+  }
+});
+
+// === GENERAR ENLACE MÁGICO ===
 app.post('/api/auth/generar-enlace', async (req, res) => {
   try {
     const { email } = req.body;
-    const usuario = await Usuario.findOne({ correo: email?.trim().toLowerCase() });
+    if (!email) return res.status(400).json({ message: 'Correo requerido' });
 
+    const usuario = await Usuario.findOne({ correo: email.trim().toLowerCase() });
     if (!usuario) {
       return res.json({ message: 'Si el correo está registrado, recibirás un enlace.' });
     }
 
-    // Borrar enlaces anteriores
     await EnlaceTemporal.deleteMany({ usuarioId: usuario._id });
 
     const token = crypto.randomBytes(32).toString('hex');
+    const expiraEn = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+
     await EnlaceTemporal.create({
       usuarioId: usuario._id,
       token,
-      tipo: 'login'
+      tipo: 'login',
+      expiraEn
     });
 
     const enlace = `${FRONTEND_URL}/validar-acceso?token=${token}`;
 
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      auth: { user: EMAIL_USER, pass: EMAIL_PASS }
-    });
-
     await transporter.sendMail({
-      from: EMAIL_USER,
+      from: `"Acceso Seguro" <${EMAIL_USER}>`,
       to: usuario.correo,
-      subject: 'Tu enlace mágico - UTHH',
+      subject: 'Tu enlace de acceso temporal',
       html: `
-        <div style="font-family: Arial, sans-serif; text-align: center; padding: 30px; background: #fff3cd; border-radius: 15px; max-width: 500px; margin: auto;">
-          <h2 style="color: #d97706;">Acceso sin contraseña</h2>
-          <p>Hola <strong>${usuario.nombre}</strong>,</p>
-          <p>Has solicitado un enlace mágico para entrar.</p>
-          <p>Este enlace expira en <strong>15 minutos</strong>.</p>
-          <br>
-          <a href="${enlace}" style="background:#f59e0b; color:white; padding:15px 40px; text-decoration:none; border-radius:50px; font-weight:bold; display:inline-block;">
-            Entrar ahora
+        <div style="font-family: Arial, sans-serif; text-align: center; padding: 20px;">
+          <h2>¡Hola, ${usuario.nombre}!</h2>
+          <p>Accede sin contraseña con este enlace mágico:</p>
+          <a href="${enlace}" style="display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">
+            Iniciar Sesión
           </a>
-          <br><br>
-          <small style="color:#666;">Si no solicitaste esto, ignora este mensaje.</small>
+          <p><small>Expira en 15 minutos. Si no solicitaste esto, ignóralo.</small></p>
         </div>
       `
     });
 
-    res.json({ message: 'Si el correo está registrado, recibirás un enlace.' });
-
+    res.json({ message: '¡Enlace enviado! Revisa tu correo.' });
   } catch (err) {
-    console.error(err);
+    console.error('Error generar enlace:', err);
     res.status(500).json({ message: 'Error del servidor' });
   }
 });
 
-// === VALIDAR ENLACE MÁGICO (DEVUELVE USUARIO) ===
+// === VALIDAR ENLACE MÁGICO ===
 app.post('/api/auth/validar-enlace', async (req, res) => {
   try {
     const { token } = req.body;
-    const enlace = await EnlaceTemporal.findOne({ token }).populate('usuarioId');
+    const enlace = await EnlaceTemporal.findOne({
+      token,
+      tipo: 'login',
+      expiraEn: { $gt: new Date() }
+    }).populate('usuarioId');
 
-    if (!enlace || (enlace.expiraEn && enlace.expiraEn < new Date())) {
+    if (!enlace) {
       return res.status(400).json({ message: 'Enlace inválido o expirado' });
     }
 
-    await EnlaceTemporal.deleteOne({ _id: enlace._id });
-    
-    const sessionToken = jwt.sign({ id: enlace.usuarioId._id }, 'clave123', { expiresIn: '7d' });
+    const usuario = enlace.usuarioId;
+    const sessionToken = jwt.sign({ id: usuario._id }, JWT_SECRET, { expiresIn: '7d' });
 
-    // DEVOLVEMOS EL USUARIO
-    res.json({ 
-      sessionToken, 
-      message: '¡Acceso concedido!',
-      usuario: { 
-        nombre: enlace.usuarioId.nombre, 
-        correo: enlace.usuarioId.correo 
-      }
+    await enlace.deleteOne();
+
+    res.json({
+      sessionToken,
+      usuario: { nombre: usuario.nombre, correo: usuario.correo },
+      message: '¡Acceso concedido!'
     });
-
   } catch (err) {
-    console.error(err(err));
     res.status(500).json({ message: 'Error' });
   }
 });
 
-//app.listen(3001, () => {
-  //console.log('Backend corriendo en http://localhost:3001');
-//});
-
-// === REGISTRO SIMPLE: NOMBRE, CORREO, CONTRASEÑA ===
+// === REGISTRO ===
 app.post('/api/auth/registro', async (req, res) => {
   try {
     const { nombre, correo, password } = req.body;
-
-    if (!nombre || !correo || !password) {
-      return res.status(400).json({ message: 'Faltan datos' });
-    }
-
-    if (password.length < 6) {
-      return res.status(400).json({ message: 'Contraseña muy corta' });
-    }
+    if (!nombre || !correo || !password) return res.status(400).json({ message: 'Faltan datos' });
 
     const existe = await Usuario.findOne({ correo: correo.toLowerCase() });
-    if (existe) {
-      return res.status(400).json({ message: 'Correo ya registrado' });
-    }
+    if (existe) return res.status(400).json({ message: 'Correo ya registrado' });
 
-    const salt = await bcryptjs.genSalt(10);
-    const passwordHash = await bcryptjs.hash(password, salt);
+    const passwordHash = await bcryptjs.hash(password, 10);
+    const usuario = await Usuario.create({ nombre, correo: correo.toLowerCase(), password: passwordHash });
 
-    const nuevo = await Usuario.create({
-      nombre: nombre.trim(),
-      correo: correo.toLowerCase().trim(),
-      password: passwordHash
-    });
-
-    res.json({ 
-      message: '¡Cuenta creada! Usa tu correo para el enlace mágico.',
-      usuario: { nombre: nuevo.nombre, correo: nuevo.correo }
-    });
-
+    res.json({ message: '¡Cuenta creada! Ya puedes usar enlace mágico.' });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Error del servidor' });
+    res.status(500).json({ message: 'Error' });
+  }
+});
+
+// === LOGIN CON CONTRASEÑA ===
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { correo, password } = req.body;
+    const usuario = await Usuario.findOne({ correo: correo.toLowerCase() });
+    if (!usuario) return res.status(400).json({ message: 'Correo o contraseña incorrectos' });
+
+    const esValida = await bcryptjs.compare(password, usuario.password);
+    if (!esValida) return res.status(400).json({ message: 'Correo o contraseña incorrectos' });
+
+    const sessionToken = jwt.sign({ id: usuario._id }, JWT_SECRET, { expiresIn: '7d' });
+
+    res.json({
+      sessionToken,
+      message: '¡Acceso concedido!',
+      usuario: { nombre: usuario.nombre, correo: usuario.correo }
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Error' });
   }
 });
 
@@ -165,92 +175,46 @@ app.post('/api/auth/recuperar-password', async (req, res) => {
   try {
     const { email } = req.body;
     const usuario = await Usuario.findOne({ correo: email?.trim().toLowerCase() });
-
     if (!usuario) {
-      return res.json({ message: 'Si el correo está registrado, recibirás un enlace.' });
+      return res.json({ message: 'Si el correo existe, recibirás un enlace.' });
     }
 
-    // Borrar tokens anteriores
-    await EnlaceTemporal.deleteMany({ usuarioId: usuario._id });
+    await EnlaceTemporal.deleteMany({ usuarioId: usuario._id, tipo: 'recuperacion' });
 
     const token = crypto.randomBytes(32).toString('hex');
+    const expiraEn = new Date(Date.now() + 15 * 60 * 1000);
+
     await EnlaceTemporal.create({
       usuarioId: usuario._id,
       token,
-      tipo: 'recuperacion' // ← para diferenciar
+      tipo: 'recuperacion',
+      expiraEn
     });
 
     const enlace = `${FRONTEND_URL}/cambiar-password?token=${token}`;
 
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      auth: { user: EMAIL_USER, pass: EMAIL_PASS }
-    });
-
     await transporter.sendMail({
-      from: EMAIL_USER,
+      from: `"Recuperación" <${EMAIL_USER}>`,
       to: usuario.correo,
-      subject: '🔑 Cambia tu contraseña - UTHH',
+      subject: 'Cambia tu contraseña',
       html: `
-        <div style="font-family: Arial; text-align: center; padding: 30px; background: #fff3cd; border-radius: 15px;">
-          <h2 style="color: #d97706;">Recuperación de contraseña</h2>
-          <p>Has solicitado cambiar tu contraseña.</p>
-          <p>Este enlace expira en <strong>15 minutos</strong>.</p>
-          <br>
-          <a href="${enlace}" style="background:#f59e0b; color:white; padding:15px 40px; text-decoration:none; border-radius:50px; font-weight:bold;">
+        <div style="font-family: Arial, sans-serif; text-align: center;">
+          <h2>Recupera tu acceso</h2>
+          <p>Haz clic para cambiar tu contraseña:</p>
+          <a href="${enlace}" style="background: #f59e0b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px;">
             Cambiar Contraseña
           </a>
-          <br><br>
-          <small style="color:#666;">Si no solicitaste esto, ignora este mensaje.</small>
+          <p><small>Válido por 15 minutos.</small></p>
         </div>
       `
     });
 
-    res.json({ message: 'Si el correo está registrado, recibirás un enlace.' });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Error' });
-  }
-});
-
-// === CAMBIAR CONTRASEÑA CON TOKEN ===
-app.post('/api/auth/cambiar-password', async (req, res) => {
-  try {
-    const { token, nuevaPassword } = req.body;
-
-    if (nuevaPassword.length < 6) {
-      return res.status(400).json({ message: 'Contraseña muy corta' });
-    }
-
-    const enlace = await EnlaceTemporal.findOne({
-      token,
-      tipo: 'recuperacion',
-      expiraEn: { $gt: new Date() }
-    });
-
-    if (!enlace) {
-      return res.status(400).json({ message: 'Enlace inválido o expirado' });
-    }
-
-    const salt = await bcryptjs.genSalt(10);
-    const passwordHash = await bcryptjs.hash(nuevaPassword, salt);
-
-    await Usuario.updateOne(
-      { _id: enlace.usuarioId },
-      { password: passwordHash }
-    );
-
-    await EnlaceTemporal.deleteOne({ _id: enlace._id });
-
-    res.json({ message: '¡Contraseña cambiada con éxito!' });
-
+    res.json({ message: 'Enlace enviado al correo.' });
   } catch (err) {
     res.status(500).json({ message: 'Error' });
   }
 });
+
 // === VERIFICAR TOKEN DE RECUPERACIÓN ===
 app.post('/api/auth/verificar-token-recuperacion', async (req, res) => {
   try {
@@ -261,9 +225,7 @@ app.post('/api/auth/verificar-token-recuperacion', async (req, res) => {
       expiraEn: { $gt: new Date() }
     });
 
-    if (!enlace) {
-      return res.status(400).json({ message: 'Enlace inválido o expirado' });
-    }
+    if (!enlace) return res.status(400).json({ message: 'Enlace inválido o expirado' });
 
     res.json({ valido: true });
   } catch (err) {
@@ -271,44 +233,38 @@ app.post('/api/auth/verificar-token-recuperacion', async (req, res) => {
   }
 });
 
-// === LOGIN CON CONTRASEÑA ===
-app.post('/api/auth/login', async (req, res) => {
+// === CAMBIAR CONTRASEÑA ===
+app.post('/api/auth/cambiar-password', async (req, res) => {
   try {
-    const { correo, password } = req.body;
-
-    const usuario = await Usuario.findOne({ correo: correo.toLowerCase() });
-    if (!usuario) {
-      return res.status(400).json({ message: 'Correo o contraseña incorrectos' });
+    const { token, nuevaPassword } = req.body;
+    if (!nuevaPassword || nuevaPassword.length < 6) {
+      return res.status(400).json({ message: 'Mínimo 6 caracteres' });
     }
 
-    const esValida = await bcryptjs.compare(password, usuario.password);
-    if (!esValida) {
-      return res.status(400).json({ message: 'Correo o contraseña incorrectos' });
-    }
+    const enlace = await EnlaceTemporal.findOne({
+      token,
+      tipo: 'recuperacion',
+      expiraEn: { $gt: new Date() }
+    }).populate('usuarioId');
 
-    const sessionToken = jwt.sign(
-      { id: usuario._id },
-      'clave123',
-      { expiresIn: '7d' }
-    );
+    if (!enlace) return res.status(400).json({ message: 'Enlace inválido o expirado' });
 
-    res.json({
-      sessionToken,
-      message: '¡Acceso concedido!',
-      usuario: { nombre: usuario.nombre, correo: usuario.correo }
-    });
+    const passwordHash = await bcryptjs.hash(nuevaPassword, 10);
+    await Usuario.updateOne({ _id: enlace.usuarioId._id }, { password: passwordHash });
+    await enlace.deleteOne();
 
+    res.json({ message: '¡Contraseña cambiada con éxito!' });
   } catch (err) {
     res.status(500).json({ message: 'Error' });
   }
 });
 
-
+// === EXPORT PARA VERCEL ===
 if (process.env.VERCEL) {
   module.exports = app;
 } else {
   const PORT = process.env.PORT || 3001;
   app.listen(PORT, () => {
-    console.log(`Backend en puerto ${PORT}`);
+    console.log(`Backend en http://localhost:${PORT}`);
   });
 }
