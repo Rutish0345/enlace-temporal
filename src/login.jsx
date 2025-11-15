@@ -1,85 +1,108 @@
-// src/login.jsx
+// src/Login.jsx - RESPONSIVO + PROFESIONAL
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
-import { useState } from 'react'
-import './App.css'
-import { Link } from 'react-router-dom' 
-function Login() { 
-  const [user, setUser] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+function Login() {
+  const [form, setForm] = useState({ correo: '', password: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleLogin = (e) => {
-    e.preventDefault()
-    // Esta es la lógica de Benilde (PIN) o una temporal
-    if (user === 'admin' && password === '12345') {
-      setError('')
-      alert('Inicio de sesión exitoso')
-    } else {
-      setError('Contraseña incorrecta')
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const res = await fetch('http://localhost:3001/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form)
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Error');
+
+      localStorage.setItem('sessionToken', data.sessionToken);
+      localStorage.setItem('usuario', JSON.stringify(data.usuario));
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="login-container">
-      {}
       <div className="left-side">
-        <img
-          src="https://cdn-icons-png.flaticon.com/512/906/906343.png"
-          alt="logo"
-          className="logo-large"
-        />
+        <div className="logo-circle">A</div>
       </div>
 
-      {/* Lado derecho: formulario */}
       <div className="right-side">
         <div className="login-box">
           <h2>Iniciar sesión</h2>
           <p className="subtitle">Acceso exclusivo para empleados autorizados</p>
 
-          <form onSubmit={handleLogin}>
+          <form onSubmit={handleSubmit}>
             <label>Usuario</label>
             <input
-              type="text"
-              placeholder="Ingresa tu usuario"
-              value={user}
-              onChange={(e) => setUser(e.target.value)}
+              type="email"
+              name="correo"
+              value={form.correo}
+              onChange={handleChange}
+              placeholder="20230047@uthh.edu.mx"
               required
             />
 
             <label>Contraseña</label>
             <input
               type="password"
-              placeholder="Ingresa tu contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              name="password"
+              value={form.password}
+              onChange={handleChange}
               required
             />
 
-            {error && <p className="error">{error}</p>}
+            <button type="submit" disabled={loading}>
+              {loading ? 'Iniciando...' : 'Iniciar sesión'}
+            </button>
 
-            <a href="#" className="forgot">
-              ¿Olvidaste tu contraseña?
-            </a>
-
-            <button type="submit">Iniciar sesión</button>
-            
-            {}
-            <Link to="/solicitar-enlace" className="forgot" style={{textAlign: 'center', display: 'block', marginTop: '15px'}}>
-              O acceder con enlace temporal
-            </Link>
-            {}
-            
+            {error && <p style={{ color: '#f87171', marginTop: '10px', fontSize: '14px' }}>{error}</p>}
           </form>
 
-          <p className="footer">
-            soporte@empresa.com · +52 77 11 89 12 65
-            <br />© 2025 Empresa — Todos los derechos reservados
-          </p>
+          <Link to="/registro" className="link">
+            ¿Primera vez? Crear cuenta
+          </Link>
+
+          <Link to="/recuperar-password" className="link">
+            ¿Olvidaste tu contraseña?
+          </Link>
+
+          <div className="divider">O</div>
+
+          <Link to="/solicitar-enlace">
+            <button style={{
+              background: '#10b981',
+              backgroundImage: 'linear-gradient(90deg, #10b981, #34d399)',
+              marginTop: '8px'
+            }}>
+              Acceder con enlace temporal
+            </button>
+          </Link>
+
+          <div className="footer">
+            <p>soporte@empresa.com • +52 77 11 89 12 65</p>
+            <p>© 2025 Empresa — Todos los derechos reservados</p>
+          </div>
         </div>
       </div>
     </div>
-  )
-  
+  );
 }
 
-export default Login // <-- 2. (Continuación) Exportamos Login
+export default Login;

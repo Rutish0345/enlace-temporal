@@ -2,23 +2,28 @@
 const mongoose = require('mongoose');
 
 const enlaceTemporalSchema = new mongoose.Schema({
-  usuarioId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Usuario', 
-    required: true 
+  usuarioId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Usuario',
+    required: true
   },
-  token: { 
-    type: String, 
+  token: {
+    type: String,
     required: true,
-    unique: true 
+    unique: true
   },
-  expiraEn: { 
-    type: Date, 
-    default: () => Date.now() + 15 * 60 * 1000, 
-    expires: 900 
+  tipo: {
+    type: String,
+    enum: ['login', 'recuperacion'],
+    default: 'login'
+  },
+  expiraEn: {
+    type: Date,
+    default: () => new Date(Date.now() + 15 * 60 * 1000),
+    index: { expires: '15m' }
   }
-}, { 
-  collection: 'enlaces_temporales' 
+}, {
+  timestamps: true
 });
 
 module.exports = mongoose.model('EnlaceTemporal', enlaceTemporalSchema);

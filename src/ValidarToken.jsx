@@ -1,68 +1,64 @@
-// src/ValidarToken.jsx
+// src/ValidarToken.jsx - SOLO PARA LOGIN MÁGICO
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 
 function ValidarToken() {
-  const [mensaje, setMensaje] = useState('Validando tu enlace...');
+  const [mensaje, setMensaje] = useState('Validando enlace...');
   const [error, setError] = useState('');
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get('token');
 
   useEffect(() => {
-    if (!token) {
-      setError('No se encontró token en el enlace.');
-      return;
+  if (!token) {
+    setError('Enlace inválido');
+    return;
+  }
+
+  const validar = async () => {
+    try {
+      const res = await fetch('http://localhost:3001/api/auth/validar-enlace', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message);
+
+      // GUARDAR SESIÓN Y USUARIO
+      localStorage.setItem('sessionToken', data.sessionToken);
+      localStorage.setItem('usuario', JSON.stringify(data.usuario));
+
+      setMensaje('¡Acceso concedido!');
+      setTimeout(() => navigate('/dashboard'), 1000);
+
+    } catch (err) {
+      setError(err.message);
     }
+  };
 
-    const validar = async () => {
-      try {
-        const response = await fetch('http://localhost:3001/api/auth/validar-enlace', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ token })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.message || 'Enlace inválido o expirado');
-        }
-
-        setMensaje('¡Acceso concedido! Bienvenido.');
-        // Aquí puedes guardar el JWT en localStorage si quieres
-        localStorage.setItem('sessionToken', data.sessionToken);
-        
-        // Redirigir al dashboard (puedes cambiar la ruta)
-        setTimeout(() => navigate('/'), 2000);
-
-      } catch (err) {
-        setError(err.message);
-      }
-    };
-
-    validar();
-  }, [token, navigate]);
+  validar();
+}, [token, navigate]);
 
   return (
     <div className="login-container">
       <div className="right-side" style={{ width: '100%' }}>
         <div className="login-box">
-          <h2>Validando Acceso</h2>
-          <p style={{ margin: '20px 0', fontSize: '16px' }}>
-            {mensaje || error ? (
-              <span style={{ color: error ? '#ff6b6b' : 'lightgreen' }}>
-                {error || mensaje}
-              </span>
+          <h2>Validando...</h2>
+          <p style={{ margin: '20px 0', textAlign: 'center' }}>
+            {error ? (
+              <span style={{ color: '#ff6b6b' }}>{error}</span>
             ) : (
-              'Por favor espera...'
+              <span style={{ color: 'lightgreen' }}>{mensaje}</span>
             )}
           </p>
-          <button onClick={() => navigate('/')} style={{ marginTop: '20px' }}>
-            Volver al inicio
-          </button>
+          {error && (
+            <button onClick={() => navigate('/')} style={{ width: '100%' }}>
+              Volver al login
+            </button>
+          )}
         </div>
       </div>
     </div>

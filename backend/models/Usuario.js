@@ -2,15 +2,24 @@
 const mongoose = require('mongoose');
 
 const usuarioSchema = new mongoose.Schema({
-  id_usuario: String,
-  nombre: String,
-  correo: String, 
-  pin_seguridad: String,
-  fecha_creacion: Date,
-  ultimo_acceso: Date,
-  estado_cuenta: String
-}, { 
-  collection: 'usuarios' 
-}); 
+  nombre: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  correo: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+    trim: true
+  },
+  password: {
+    type: String,
+    required: true
+  }
+}, {
+  timestamps: true // crea createdAt y updatedAt automáticamente
+});
 
 module.exports = mongoose.model('Usuario', usuarioSchema);
