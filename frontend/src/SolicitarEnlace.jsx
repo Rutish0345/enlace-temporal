@@ -15,7 +15,7 @@ function SolicitarEnlace() {
     setCargando(true);
 
     try {
-      const response = await fetch('http://localhost:3001/api/auth/generar-enlace', {
+      const response = await fetch('/api/auth/generar-enlace', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

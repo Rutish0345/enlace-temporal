@@ -19,7 +19,7 @@ function CambiarPassword() {
     // Verificar token al cargar
     const verificar = async () => {
       try {
-        const res = await fetch('http://localhost:3001/api/auth/verificar-token-recuperacion', {
+        const res = await fetch('/api/auth/verificar-token-recuperacion', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token })
@@ -43,7 +43,7 @@ function CambiarPassword() {
     }
 
     try {
-      const res = await fetch('http://localhost:3001/api/auth/cambiar-password', {
+      const res = await fetch('/api/auth/cambiar-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, nuevaPassword: password })

@@ -18,7 +18,7 @@ function Login() {
     setLoading(true);
 
     try {
-      const res = await fetch('http://localhost:3001/api/auth/login', {
+      const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)
@@ -55,7 +55,7 @@ function Login() {
               name="correo"
               value={form.correo}
               onChange={handleChange}
-              placeholder="20230047@uthh.edu.mx"
+              placeholder="correo@.com"
               required
             />
 

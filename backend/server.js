@@ -1,4 +1,7 @@
 // backend/server.js  ← versión INFALIBLE (sin depender del .env)
+// === SOLO PARA VERCEL (serverless) ===
+
+
 const bcryptjs = require('bcryptjs');
 const express = require('express');
 const cors = require('cors');
@@ -115,9 +118,9 @@ app.post('/api/auth/validar-enlace', async (req, res) => {
   }
 });
 
-app.listen(3001, () => {
-  console.log('Backend corriendo en http://localhost:3001');
-});
+//app.listen(3001, () => {
+  //console.log('Backend corriendo en http://localhost:3001');
+//});
 
 // === REGISTRO SIMPLE: NOMBRE, CORREO, CONTRASEÑA ===
 app.post('/api/auth/registro', async (req, res) => {
@@ -299,3 +302,13 @@ app.post('/api/auth/login', async (req, res) => {
     res.status(500).json({ message: 'Error' });
   }
 });
+
+
+if (process.env.VERCEL) {
+  module.exports = app;
+} else {
+  const PORT = process.env.PORT || 3001;
+  app.listen(PORT, () => {
+    console.log(`Backend en puerto ${PORT}`);
+  });
+}

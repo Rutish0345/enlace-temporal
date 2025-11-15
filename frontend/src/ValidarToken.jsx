@@ -17,7 +17,7 @@ function ValidarToken() {
 
   const validar = async () => {
     try {
-      const res = await fetch('http://localhost:3001/api/auth/validar-enlace', {
+      const res = await fetch('/api/auth/validar-enlace', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token })
