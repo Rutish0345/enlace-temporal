@@ -1,4 +1,6 @@
 // src/config.js
-const API_URL = 'https://enlace-temporal-api.onrender.com';
+// En producción, usar la misma URL (rutas relativas)
+// En desarrollo, usar localhost si es necesario
+const API_URL = import.meta.env.PROD ? '' : 'http://localhost:3001';
 
 export default API_URL;
